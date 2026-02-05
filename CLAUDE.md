@@ -24,9 +24,16 @@ No test runner is configured yet. If one is added, update this file.
 ## Styling
 
 - Tailwind v4 via PostCSS (`postcss.config.mjs`). No `tailwind.config.js` — theme tokens are defined inline in `src/app/globals.css` using `@theme inline`.
-- Dark mode is handled via `prefers-color-scheme` media query on CSS custom properties (`--background`, `--foreground`), not Tailwind's `dark:` class strategy.
+- Dark mode uses `next-themes` with the `.dark` class strategy (`attribute="class"` on `<html>`). Default theme is `system` (respects `prefers-color-scheme`). Use Tailwind's `dark:` variant for dark-mode-specific styles. A `ModeToggle` component (`src/components/ui/mode-toggle.tsx`) provides Light / Dark / System switching.
 - Fonts: Geist Sans and Geist Mono loaded via `next/font/google` in `layout.tsx` and exposed as CSS variables (`--font-geist-sans`, `--font-geist-mono`).
+
+## UI Components
+
+- **All UI must be built exclusively with shadcn/ui components.** Do not create custom components for anything shadcn already provides (buttons, inputs, dialogs, dropdowns, etc.).
+- Components live in `src/components/ui/`. Add new ones via `npx shadcn add <component>`.
+- Config is in `components.json` (style: new-york, base color: neutral, icon library: lucide).
+- The `cn` utility (`src/lib/utils.ts`) is available for merging Tailwind classes.
 
 ## Project State
 
-This is a freshly bootstrapped project. Only `src/app/page.tsx` (home page) and `src/app/layout.tsx` (root layout) exist. There is no backend, API routes, state management, auth, or database integration yet. The `src/app/.env` file is empty.
+shadcn/ui is set up with `next-themes` dark mode. `src/app/page.tsx` (home page) and `src/app/layout.tsx` (root layout) exist. There is no backend, API routes, state management, auth, or database integration yet. The `src/app/.env` file is empty.
