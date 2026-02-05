@@ -1,12 +1,8 @@
 import { SignupForm } from "@/components/signup-form"
-import { ModeToggle } from "@/components/ui/mode-toggle"
 
-export default function Home() {
+export default function SignupPage() {
   return (
     <div className="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-      <div className="absolute top-2 right-2">
-        <ModeToggle />
-      </div>
       <div className="w-full max-w-sm">
         <SignupForm />
       </div>
