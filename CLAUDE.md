@@ -13,6 +13,12 @@ npm run lint     # ESLint (Next.js + Core Web Vitals rules)
 
 No test runner is configured yet. If one is added, update this file.
 
+## Git & Commits
+
+- **Commit messages must be short and to the point, no fluff.**
+- **NEVER include `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>` or any similar attribution lines.**
+- Keep messages under 50 characters when possible, focusing on what changed, not why or how.
+
 ## Architecture
 
 **Stack:** Next.js 16.1.6 · React 19.2.3 · TypeScript (strict) · Tailwind CSS v4

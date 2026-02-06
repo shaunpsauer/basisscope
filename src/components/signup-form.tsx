@@ -27,9 +27,9 @@ export function SignupForm({
               <div className="flex size-8 items-center justify-center rounded-md">
                 <GalleryVerticalEnd className="size-6" />
               </div>
-              <span className="sr-only">BasisLogic</span>
+              <span className="sr-only">BasisScope</span>
             </a>
-            <h1 className="text-xl font-bold font-mono">Welcome to Basis<span className="text-blue-500">Logic</span></h1>
+            <h1 className="text-xl font-bold font-mono">Welcome to Basis<span className="text-blue-500">Scope</span></h1>
             <FieldDescription>
               Already have an account? <a href="#">Sign in</a>
             </FieldDescription>
