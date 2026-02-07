@@ -1,0 +1,19 @@
+Page Header Specification
+
+Structure
+- Full-width header with two rows.
+- Top row: logo placeholder + app name on left, mode toggle on right.
+- Bottom row: breadcrumb navigation.
+
+Components
+- Use shadcn/ui only.
+- Logo placeholder: 32x32 square, rounded, muted background, border.
+- App name text: "BasisScope", semibold, larger text size.
+- Mode toggle: existing `ModeToggle` component.
+- Breadcrumb: shadcn `Breadcrumb` with placeholder items.
+
+Layout
+- Header padding: 24px horizontal, 16px vertical.
+- Header background uses `bg-background`.
+- Header bottom border uses `border-b border-border`.
+- Breadcrumb row has top padding for separation.

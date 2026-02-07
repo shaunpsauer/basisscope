@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
-export function SignupForm({
+export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
@@ -30,9 +30,9 @@ export function SignupForm({
               </div>
               <span className="sr-only">BasisScope</span>
             </a>
-            <h1 className="text-xl font-bold font-mono">Welcome to Basis<span className="text-blue-500">Scope</span></h1>
+            <h1 className="text-xl font-bold">Welcome to BasisScope.</h1>
             <FieldDescription>
-              Already have an account? link to <Link href="/login">Sign in</Link>
+              Don&apos;t have an account? <Link href="/signup">Sign up</Link>
             </FieldDescription>
           </div>
           <Field>
@@ -45,7 +45,7 @@ export function SignupForm({
             />
           </Field>
           <Field>
-            <Button type="submit">Create Account</Button>
+            <Button type="submit">Login</Button>
           </Field>
           <FieldSeparator>Or</FieldSeparator>
           <Field className="grid gap-4 sm:grid-cols-2">
