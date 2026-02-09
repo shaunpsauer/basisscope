@@ -62,12 +62,12 @@ export function ExcavationConfig({
 }: ExcavationConfigProps) {
   return (
     <Card>
-      <CardHeader className="py-3">
+      <CardHeader className="py-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <Layers className="w-4 h-4" /> Excavation Configuration
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-4">
+      <CardContent className="pt-0 pb-3 space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-sm">Excavation Type</Label>

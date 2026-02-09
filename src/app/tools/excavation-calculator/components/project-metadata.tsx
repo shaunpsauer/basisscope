@@ -31,7 +31,7 @@ export function ProjectMetadata({
     <Collapsible defaultOpen={false}>
       <Card>
         <CollapsibleTrigger asChild>
-          <CardHeader className="py-3 cursor-pointer">
+          <CardHeader className="py-2 cursor-pointer">
             <div className="flex items-center justify-between">
               <CardTitle className="text-sm flex items-center gap-2">
                 <FileText className="w-4 h-4" /> Project Metadata
@@ -41,7 +41,7 @@ export function ProjectMetadata({
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
-          <CardContent className="pt-0 space-y-3">
+          <CardContent className="pt-0 pb-3 space-y-2">
             <div>
               <Label className="text-sm">Description</Label>
               <Input

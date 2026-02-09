@@ -57,12 +57,12 @@ export function EquipmentSpoils({
 }: EquipmentSpoilsProps) {
   return (
     <Card>
-      <CardHeader className="py-3">
+      <CardHeader className="py-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <Truck className="w-4 h-4" /> Equipment & Spoils
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 pb-3 space-y-2.5">
         <div className="grid grid-cols-2 gap-3">
           <div>
             <Label className="text-sm">Excavator</Label>

@@ -22,13 +22,13 @@ export type ExcType = "trench" | "bellhole";
 export type DepthMode = "total" | "centerline" | "topOfPipe";
 export type SpoilsAction = "reuse" | "offhaul" | "partial";
 
-// ─── Settings ────────────────────────────────────────────────
+// Settings
 
 export type Settings = {
   [K in keyof typeof DEFAULT_SETTINGS]: number;
 };
 
-// ─── Supporting data types ───────────────────────────────────
+// Supporting data types
 
 export interface DepthSegment {
   lengthFt: number;
@@ -46,7 +46,7 @@ export interface NsSide {
   lengthFt: number;
 }
 
-// ─── Calculator input (serializable, DB-ready) ──────────────
+// Calculator input (serializable, DB-ready) 
 
 export interface CalculatorInput {
   // Project metadata
@@ -94,7 +94,7 @@ export interface CalculatorInput {
   settings: Settings;
 }
 
-// ─── Calculation results ─────────────────────────────────────
+// Calculation results
 
 export interface CalculationResults {
   // Volumes

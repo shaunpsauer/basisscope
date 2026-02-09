@@ -34,7 +34,7 @@ export function TopBar({
 }: TopBarProps) {
   return (
     <div className="sticky top-0 z-40 bg-background border-b border-border">
-      <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
+      <div className="max-w-3xl mx-auto px-4 py-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 bg-primary rounded flex items-center justify-center">
             <Calculator className="w-4 h-4 text-primary-foreground" />

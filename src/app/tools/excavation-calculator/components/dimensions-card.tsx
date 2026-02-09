@@ -83,12 +83,12 @@ export function DimensionsCard({
 }: DimensionsCardProps) {
   return (
     <Card>
-      <CardHeader className="py-3">
+      <CardHeader className="py-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <Ruler className="w-4 h-4" /> Dimensions
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-4">
+      <CardContent className="pt-0 pb-3 space-y-3">
         {excShape === "nonstandard" ? (
           <NonStandardDimensions
             nsSides={nsSides}

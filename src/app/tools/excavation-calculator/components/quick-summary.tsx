@@ -13,12 +13,12 @@ interface QuickSummaryProps {
 export function QuickSummary({ results, shoringType }: QuickSummaryProps) {
   return (
     <Card className="border-primary">
-      <CardHeader className="py-3">
+      <CardHeader className="py-2">
         <CardTitle className="text-sm flex items-center gap-2">
           <BarChart3 className="w-4 h-4" /> Quick Summary
         </CardTitle>
       </CardHeader>
-      <CardContent className="pt-0 space-y-3">
+      <CardContent className="pt-0 pb-3 space-y-2">
         {/* Phase Hours Breakdown */}
         <div className="space-y-2">
           <div className="flex items-center justify-between py-1.5 px-3 bg-muted rounded-md">

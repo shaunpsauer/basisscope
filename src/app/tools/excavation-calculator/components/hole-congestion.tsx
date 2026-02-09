@@ -43,7 +43,7 @@ export function HoleCongestion({
 }: HoleCongestionProps) {
   return (
     <Card>
-      <CardHeader className="py-3">
+      <CardHeader className="py-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm flex items-center gap-2">
             <Layers className="w-4 h-4" /> Hole Congestion
@@ -55,7 +55,7 @@ export function HoleCongestion({
         </div>
       </CardHeader>
       {hasCongestion && (
-        <CardContent className="pt-0 space-y-2">
+        <CardContent className="pt-0 pb-3 space-y-2">
           {congestionItems.map((item, i) => (
             <div key={i} className="flex items-center gap-2">
               <Select

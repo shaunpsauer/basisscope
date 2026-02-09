@@ -31,21 +31,21 @@ import { ResultsDrawer } from "./components/results-drawer";
 import { TopBar } from "./components/top-bar";
 
 export function ExcavationCalculator() {
-  // ── UI state
+  // UI state
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
 
-  // ── Settings
+  // Settings
   const [settings, setSettings] = useState<Settings>({
     ...DEFAULT_SETTINGS,
   });
 
-  // ── Project Metadata
+  // Project Metadata
   const [projectDesc, setProjectDesc] = useState("");
   const [projectLine, setProjectLine] = useState("");
   const [projectLocation, setProjectLocation] = useState("");
 
-  // ── Excavation Params
+  // Excavation Params
   const [excType, setExcType] = useState<ExcType>("trench");
   const [surfaceType, setSurfaceType] = useState<SurfaceTypeKey>("dirt");
   const [locationType, setLocationType] = useState<LocationTypeKey>("city");
@@ -54,7 +54,7 @@ export function ExcavationCalculator() {
   const [excShape, setExcShape] = useState<ExcShapeKey>("rectangle");
   const [pipeOD, setPipeOD] = useState(6);
 
-  // ── Dimensions
+  // Dimensions
   const [lengthFt, setLengthFt] = useState(20);
   const [widthFt, setWidthFt] = useState(0);
   const [depthFt, setDepthFt] = useState(5);
@@ -63,7 +63,7 @@ export function ExcavationCalculator() {
   const [multiDepth, setMultiDepth] = useState(false);
   const [depthSegments, setDepthSegments] = useState<DepthSegment[]>([]);
 
-  // ── Non-standard sides
+  // Non-standard sides
   const [nsSides, setNsSides] = useState<NsSide[]>([
     { label: "A", lengthFt: 10 },
     { label: "B", lengthFt: 8 },
@@ -72,26 +72,26 @@ export function ExcavationCalculator() {
     { label: "E", lengthFt: 6 },
   ]);
 
-  // ── Congestion
+  // Congestion
   const [hasCongestion, setHasCongestion] = useState(false);
   const [congestionItems, setCongestionItems] = useState<CongestionItem[]>([]);
 
-  // ── Equipment
+  // Equipment
   const [excavatorSize, setExcavatorSize] =
     useState<ExcavatorSizeKey>("small");
   const [truckSize, setTruckSize] = useState<TruckSizeKey>("14cy");
 
-  // ── Spoils
+  // Spoils
   const [spoilsAction, setSpoilsAction] = useState<SpoilsAction>("reuse");
 
-  // ── Hand Dig Override
+  // Hand Dig Override
   const [handDigOverride, setHandDigOverride] = useState(false);
   const [handDigPctManual, setHandDigPctManual] = useState(30);
 
-  // ── Derived values
+  // Derived values
   const autoWidthIn = getMinTrenchWidth(pipeOD);
 
-  // ── Run calculations (React Compiler handles memoization)
+  // Run calculations (React Compiler handles memoization)
   const results = calculateResults({
     projectDesc,
     projectLine,
@@ -121,7 +121,7 @@ export function ExcavationCalculator() {
     settings,
   });
 
-  // ── Helpers: congestion
+  // Helpers: congestion
   const addCongestion = () =>
     setCongestionItems([
       ...congestionItems,
@@ -139,7 +139,7 @@ export function ExcavationCalculator() {
     setCongestionItems(items);
   };
 
-  // ── Helpers: depth segments
+  // Helpers: depth segments
   const addDepthSegment = () =>
     setDepthSegments([...depthSegments, { lengthFt: 10, depthFt: 5 }]);
   const removeDepthSegment = (i: number) =>
@@ -150,7 +150,7 @@ export function ExcavationCalculator() {
     setDepthSegments(segs);
   };
 
-  // ── Helpers: non-standard sides
+  // Helpers: non-standard sides
   const addNsSide = () =>
     setNsSides([
       ...nsSides,
@@ -170,8 +170,8 @@ export function ExcavationCalculator() {
         onInfoOpenChange={setInfoOpen}
       />
 
-      {/* ─── MAIN FORM ────────────────────────────── */}
-      <div className="max-w-3xl mx-auto px-4 py-4 space-y-4">
+      {/* MAIN FORM */}
+      <div className="max-w-3xl mx-auto px-4 py-3 space-y-2.5">
         <ProjectMetadata
           projectDesc={projectDesc}
           setProjectDesc={setProjectDesc}
@@ -255,7 +255,7 @@ export function ExcavationCalculator() {
         <QuickSummary results={results} shoringType={shoringType} />
       </div>
 
-      {/* ─── RESULTS DRAWER ────────────────────────── */}
+      {/* RESULTS DRAWER */}
       <ResultsDrawer
         results={results}
         settings={settings}
