@@ -28,13 +28,11 @@ import { HoleCongestion } from "./components/hole-congestion";
 import { ProjectMetadata } from "./components/project-metadata";
 import { QuickSummary } from "./components/quick-summary";
 import { ResultsDrawer } from "./components/results-drawer";
-import { TopBar } from "./components/top-bar";
+import { SettingsSheet } from "./components/settings-sheet";
 
 export function ExcavationCalculator() {
   // UI state
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [infoOpen, setInfoOpen] = useState(false);
-
   // Settings
   const [settings, setSettings] = useState<Settings>({
     ...DEFAULT_SETTINGS,
@@ -161,17 +159,16 @@ export function ExcavationCalculator() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20">
-      <TopBar
-        settings={settings}
-        setSettings={setSettings}
-        settingsOpen={settingsOpen}
-        onSettingsOpenChange={setSettingsOpen}
-        infoOpen={infoOpen}
-        onInfoOpenChange={setInfoOpen}
-      />
-
       {/* MAIN FORM */}
       <div className="max-w-3xl mx-auto px-4 py-3 space-y-2.5">
+        <div className="flex justify-end">
+          <SettingsSheet
+            settings={settings}
+            setSettings={setSettings}
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+          />
+        </div>
         <ProjectMetadata
           projectDesc={projectDesc}
           setProjectDesc={setProjectDesc}

@@ -18,7 +18,7 @@ const defaultBreadcrumbs: BreadcrumbItemData[] = [
 
 export function PageHeader({ breadcrumbs = defaultBreadcrumbs }: PageHeaderProps) {
   return (
-    <header className="bg-background border-b border-border px-6 py-4">
+    <header className="sticky top-0 z-40 bg-background border-b border-border px-6 py-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-md border border-border bg-muted" />
