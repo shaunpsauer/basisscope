@@ -5,7 +5,11 @@ import {
   TRUCK_SIZES,
   SHORING_TYPES,
 } from "./constants";
-import type { CalculatorInput, CalculationResults } from "./types";
+import type {
+  CalculatorInput,
+  CalculationResults,
+  DepthSegment,
+} from "./types";
 
 // Utility functions
 
@@ -55,7 +59,7 @@ function cfToCY(cf: number): number {
   return cf / 27;
 }
 
-// FIX #8: Parse slope ratio strings reliably instead of relying on parseFloat
+// Parse slope ratio strings reliably instead of relying on parseFloat
 function parseSlopeRatio(ratioStr: string): number {
   if (ratioStr === "vertical") return 0; // vertical walls = no horizontal run
   const parts = ratioStr.split(":");
@@ -67,6 +71,31 @@ function parseSlopeRatio(ratioStr: string): number {
     }
   }
   return 1.5; // safe fallback
+}
+
+// Per-segment helpers for multi-depth
+
+function computeSegmentExcDepth(
+  seg: DepthSegment,
+  pipeODft: number,
+  clearanceUnderFt: number,
+  fallbackDepthFt: number,
+): number {
+  const rawDepth = seg.depthFt || fallbackDepthFt;
+  if (seg.depthMode === "topOfPipe")
+    return rawDepth + pipeODft + clearanceUnderFt;
+  if (seg.depthMode === "centerline")
+    return rawDepth + pipeODft / 2 + clearanceUnderFt;
+  return rawDepth; // "total"
+}
+
+function getSegmentWidth(
+  seg: DepthSegment,
+  autoWidthFt: number,
+  isTrench: boolean,
+): number {
+  if (isTrench && seg.useAutoWidth) return autoWidthFt;
+  return seg.widthFt || autoWidthFt; // fallback to auto if 0
 }
 
 // Main calculation function
@@ -129,94 +158,106 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   let bankVolCF = 0;
   let perimeterFt = 0;
   let surfaceAreaSF = 0;
+  let floorAreaSF = 0;
   let effectiveLength = lengthFt;
   let effectiveWidth = effectiveWidthFt;
   let effectiveDepth = computedExcDepthFt;
 
-  if (excType === "trench") {
-    if (multiDepth && depthSegments.length > 0) {
-      depthSegments.forEach((seg) => {
-        const segLen = seg.lengthFt || 0;
-        let segDepth = seg.depthFt || depthFt;
-        if (depthMode === "topOfPipe") {
-          segDepth = segDepth + pipeODft_raw + clearanceUnderFt;
-        } else if (depthMode === "centerline") {
-          segDepth = segDepth + pipeODft_raw / 2 + clearanceUnderFt;
-        }
-        if (shoringType === "sloped") {
-          bankVolCF += calcVolumeTrapezoid(
-            segLen,
-            effectiveWidth,
-            segDepth,
-            slopeR,
-          );
-        } else {
-          bankVolCF += calcVolumeRect(segLen, effectiveWidth, segDepth);
-        }
-      });
-      effectiveLength = depthSegments.reduce(
-        (s, seg) => s + (seg.lengthFt || 0),
-        0,
-      );
-      effectiveDepth =
-        depthSegments.reduce((s, seg) => {
-          let segD = seg.depthFt || depthFt;
-          if (depthMode === "topOfPipe")
-            segD = segD + pipeODft_raw + clearanceUnderFt;
-          else if (depthMode === "centerline")
-            segD = segD + pipeODft_raw / 2 + clearanceUnderFt;
-          return s + segD * (seg.lengthFt || 0);
-        }, 0) / (effectiveLength || 1);
+  const autoWidthFt = toFt(autoWidthIn);
+  const isTrench = excType === "trench";
 
-      // FIX #4: Calculate surfaceAreaSF for multi-depth trenches
+  // Shared multi-depth loop — works for both trenches and bell holes.
+  // Each segment carries its own width, depthMode, and useAutoWidth.
+  if (multiDepth && depthSegments.length > 0) {
+    let sumLenWidth = 0; // for weighted-average effectiveWidth
+    let sumLenDepth = 0; // for weighted-average effectiveDepth
+
+    depthSegments.forEach((seg) => {
+      const segLen = seg.lengthFt || 0;
+      const segDepth = computeSegmentExcDepth(
+        seg,
+        pipeODft_raw,
+        clearanceUnderFt,
+        depthFt,
+      );
+      const segWidth = getSegmentWidth(seg, autoWidthFt, isTrench);
+
+      // Volume
       if (shoringType === "sloped") {
-        // For sloped multi-depth, use max depth for the top-width approximation
-        const maxSegDepth = Math.max(
-          ...depthSegments.map((seg) => {
-            let segD = seg.depthFt || depthFt;
-            if (depthMode === "topOfPipe")
-              segD = segD + pipeODft_raw + clearanceUnderFt;
-            else if (depthMode === "centerline")
-              segD = segD + pipeODft_raw / 2 + clearanceUnderFt;
-            return segD;
-          }),
-        );
-        const topWidth = effectiveWidth + 2 * maxSegDepth * slopeR;
-        surfaceAreaSF = effectiveLength * topWidth;
-      } else {
-        surfaceAreaSF = effectiveLength * effectiveWidth;
-      }
-    } else {
-      if (shoringType === "sloped") {
-        bankVolCF = calcVolumeTrapezoid(
-          effectiveLength,
-          effectiveWidth,
-          computedExcDepthFt,
-          slopeR,
-        );
-        const topWidth = effectiveWidth + 2 * computedExcDepthFt * slopeR;
-        surfaceAreaSF = effectiveLength * topWidth;
+        bankVolCF += calcVolumeTrapezoid(segLen, segWidth, segDepth, slopeR);
       } else if (shoringType === "benched") {
-        const benchWidth = computedExcDepthFt * 0.5;
-        const topWidth = effectiveWidth + 2 * benchWidth;
-        const avgWidth = (effectiveWidth + topWidth) / 2;
-        bankVolCF = effectiveLength * avgWidth * computedExcDepthFt;
-        surfaceAreaSF = effectiveLength * topWidth;
+        const benchW = segDepth * 0.5;
+        const topW = segWidth + 2 * benchW;
+        const avgW = (segWidth + topW) / 2;
+        bankVolCF += segLen * avgW * segDepth;
       } else {
-        bankVolCF = calcVolumeRect(
-          effectiveLength,
-          effectiveWidth,
-          computedExcDepthFt,
-        );
-        surfaceAreaSF = effectiveLength * effectiveWidth;
+        bankVolCF += calcVolumeRect(segLen, segWidth, segDepth);
       }
+
+      // Surface area per segment
+      if (shoringType === "sloped") {
+        const topW = segWidth + 2 * segDepth * slopeR;
+        surfaceAreaSF += segLen * topW;
+      } else if (shoringType === "benched") {
+        const topW = segWidth + 2 * segDepth * 0.5;
+        surfaceAreaSF += segLen * topW;
+      } else {
+        surfaceAreaSF += segLen * segWidth;
+      }
+
+      // Floor area (bottom of excavation, for pipe zone calcs)
+      floorAreaSF += segLen * segWidth;
+
+      // Accumulators for weighted averages
+      sumLenWidth += segLen * segWidth;
+      sumLenDepth += segLen * segDepth;
+    });
+
+    effectiveLength = depthSegments.reduce(
+      (s, seg) => s + (seg.lengthFt || 0),
+      0,
+    );
+    effectiveWidth = effectiveLength > 0 ? sumLenWidth / effectiveLength : effectiveWidthFt;
+    effectiveDepth = effectiveLength > 0 ? sumLenDepth / effectiveLength : computedExcDepthFt;
+
+    // Perimeter uses weighted-average width (reasonable approximation)
+    perimeterFt = isTrench
+      ? 2 * (effectiveLength + effectiveWidth)
+      : 2 * (effectiveLength + effectiveWidth); // bell hole treated similarly
+
+  } else if (isTrench) {
+    // Single-depth trench
+    if (shoringType === "sloped") {
+      bankVolCF = calcVolumeTrapezoid(
+        effectiveLength,
+        effectiveWidth,
+        computedExcDepthFt,
+        slopeR,
+      );
+      const topWidth = effectiveWidth + 2 * computedExcDepthFt * slopeR;
+      surfaceAreaSF = effectiveLength * topWidth;
+    } else if (shoringType === "benched") {
+      const benchWidth = computedExcDepthFt * 0.5;
+      const topWidth = effectiveWidth + 2 * benchWidth;
+      const avgWidth = (effectiveWidth + topWidth) / 2;
+      bankVolCF = effectiveLength * avgWidth * computedExcDepthFt;
+      surfaceAreaSF = effectiveLength * topWidth;
+    } else {
+      bankVolCF = calcVolumeRect(
+        effectiveLength,
+        effectiveWidth,
+        computedExcDepthFt,
+      );
+      surfaceAreaSF = effectiveLength * effectiveWidth;
     }
+    floorAreaSF = effectiveLength * effectiveWidth;
     perimeterFt = 2 * (effectiveLength + effectiveWidth);
   } else {
-    // Bell hole
+    // Single-depth bell hole
     if (excShape === "square") {
       bankVolCF = calcVolumeRect(lengthFt, lengthFt, computedExcDepthFt);
       surfaceAreaSF = lengthFt * lengthFt;
+      floorAreaSF = lengthFt * lengthFt;
       perimeterFt = 4 * lengthFt;
       effectiveWidth = lengthFt;
     } else if (excShape === "rectangle") {
@@ -226,6 +267,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
         computedExcDepthFt,
       );
       surfaceAreaSF = lengthFt * effectiveWidth;
+      floorAreaSF = lengthFt * effectiveWidth;
       perimeterFt = 2 * (lengthFt + effectiveWidth);
     } else {
       const totalPerim = nsSides.reduce(
@@ -235,21 +277,10 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
       const approxArea = totalPerim * effectiveWidth * 0.25;
       bankVolCF = approxArea * computedExcDepthFt;
       surfaceAreaSF = approxArea;
+      floorAreaSF = approxArea;
       perimeterFt = totalPerim;
     }
   }
-
-  // FIX #1: Compute bell hole floor area correctly for pipe zone calcs
-  // For bell holes, the floor area is lengthFt * effectiveWidth (or lengthFt^2 for square)
-  // For trenches, it's effectiveLength * effectiveWidth
-  const floorAreaSF =
-    excType === "trench"
-      ? effectiveLength * effectiveWidth
-      : excShape === "square"
-        ? lengthFt * lengthFt
-        : excShape === "rectangle"
-          ? lengthFt * effectiveWidth
-          : surfaceAreaSF; // non-standard uses the approx area
 
   // Hand Dig % — volumetric cross-section approach
   // Keyhole shape: semicircle (above pipe center) + rectangle (below center)

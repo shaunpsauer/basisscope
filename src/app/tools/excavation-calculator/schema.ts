@@ -4,7 +4,10 @@ import { z } from "zod";
 
 const depthSegmentSchema = z.object({
   lengthFt: z.number().min(0),
+  widthFt: z.number().min(0),
   depthFt: z.number().min(0),
+  depthMode: z.enum(["total", "centerline", "topOfPipe"]),
+  useAutoWidth: z.boolean(),
 });
 
 const congestionItemSchema = z.object({

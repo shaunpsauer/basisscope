@@ -32,7 +32,10 @@ export type Settings = {
 
 export interface DepthSegment {
   lengthFt: number;
+  widthFt: number;
   depthFt: number;
+  depthMode: DepthMode;
+  useAutoWidth: boolean;
 }
 
 export interface CongestionItem {
