@@ -92,16 +92,17 @@ export function SettingsSheet({
                 </div>
               </div>
               <div>
-                <Label className="text-sm">Hand Dig Rate (CF/hr/person)</Label>
+                <Label className="text-sm">Hand Dig Rate (CY/hr/person)</Label>
                 <Input
                   type="number"
-                  value={settings.handDigRateCFPerHr}
-                  onChange={(e) =>
-                    setSettings((s) => ({
-                      ...s,
-                      handDigRateCFPerHr: parseFloat(e.target.value) || 1,
-                    }))
-                  }
+                  step={0.01}
+                  min={0.01}
+                  value={settings.handDigRateCYPerHr}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    if (!isNaN(val))
+                      setSettings((s) => ({ ...s, handDigRateCYPerHr: val }));
+                  }}
                   className="mt-1"
                 />
               </div>

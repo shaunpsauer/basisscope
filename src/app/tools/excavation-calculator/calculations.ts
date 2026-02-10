@@ -7,7 +7,7 @@ import {
 } from "./constants";
 import type { CalculatorInput, CalculationResults } from "./types";
 
-// ─── Utility functions ───────────────────────────────────────
+// Utility functions
 
 export function getMinTrenchWidth(pipeOD: number): number {
   if (pipeOD < 3) return 12;
@@ -55,7 +55,21 @@ function cfToCY(cf: number): number {
   return cf / 27;
 }
 
-// ─── Main calculation function ───────────────────────────────
+// FIX #8: Parse slope ratio strings reliably instead of relying on parseFloat
+function parseSlopeRatio(ratioStr: string): number {
+  if (ratioStr === "vertical") return 0; // vertical walls = no horizontal run
+  const parts = ratioStr.split(":");
+  if (parts.length === 2) {
+    const horizontal = parseFloat(parts[0]);
+    const vertical = parseFloat(parts[1]);
+    if (!isNaN(horizontal) && !isNaN(vertical) && vertical !== 0) {
+      return horizontal / vertical;
+    }
+  }
+  return 1.5; // safe fallback
+}
+
+// Main calculation function
 
 export function calculateResults(input: CalculatorInput): CalculationResults {
   const {
@@ -94,7 +108,10 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const swellFactor = 1 + soil.swellPct / 100;
   const eff = settings.jobEfficiency / 100;
 
-  // ── Depth Mode Computation
+  // FIX #8: Use reliable slope ratio parser
+  const slopeR = parseSlopeRatio(soil.slopeRatio);
+
+  // Depth Mode Computation
   const clearanceUnderFt = settings.clearanceUnderPipeIn / 12;
   const pipeODft_raw = pipeOD / 12;
   let computedExcDepthFt = depthFt;
@@ -108,22 +125,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     depthInputLabel = "Depth to Centerline";
   }
 
-  // ── Hand Dig % Calculation
-  const handDigZoneIn =
-    settings.clearanceUnderPipeIn +
-    settings.pipeClearanceIn +
-    pipeOD +
-    settings.pipeClearanceIn;
-  const excDepthIn = computedExcDepthFt * 12;
-  const calculatedHandDigPct =
-    excDepthIn > 0
-      ? Math.min(100, Math.round((handDigZoneIn / excDepthIn) * 100))
-      : 0;
-  const activeHandDigPct = handDigOverride
-    ? handDigPctManual
-    : calculatedHandDigPct;
-
-  // ── Volume Calculations (Bank)
+  // Volume Calculations (Bank)
   let bankVolCF = 0;
   let perimeterFt = 0;
   let surfaceAreaSF = 0;
@@ -142,7 +144,6 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
           segDepth = segDepth + pipeODft_raw / 2 + clearanceUnderFt;
         }
         if (shoringType === "sloped") {
-          const slopeR = parseFloat(soil.slopeRatio) || 1.5;
           bankVolCF += calcVolumeTrapezoid(
             segLen,
             effectiveWidth,
@@ -166,9 +167,27 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
             segD = segD + pipeODft_raw / 2 + clearanceUnderFt;
           return s + segD * (seg.lengthFt || 0);
         }, 0) / (effectiveLength || 1);
+
+      // FIX #4: Calculate surfaceAreaSF for multi-depth trenches
+      if (shoringType === "sloped") {
+        // For sloped multi-depth, use max depth for the top-width approximation
+        const maxSegDepth = Math.max(
+          ...depthSegments.map((seg) => {
+            let segD = seg.depthFt || depthFt;
+            if (depthMode === "topOfPipe")
+              segD = segD + pipeODft_raw + clearanceUnderFt;
+            else if (depthMode === "centerline")
+              segD = segD + pipeODft_raw / 2 + clearanceUnderFt;
+            return segD;
+          }),
+        );
+        const topWidth = effectiveWidth + 2 * maxSegDepth * slopeR;
+        surfaceAreaSF = effectiveLength * topWidth;
+      } else {
+        surfaceAreaSF = effectiveLength * effectiveWidth;
+      }
     } else {
       if (shoringType === "sloped") {
-        const slopeR = parseFloat(soil.slopeRatio) || 1.5;
         bankVolCF = calcVolumeTrapezoid(
           effectiveLength,
           effectiveWidth,
@@ -220,6 +239,36 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     }
   }
 
+  // FIX #1: Compute bell hole floor area correctly for pipe zone calcs
+  // For bell holes, the floor area is lengthFt * effectiveWidth (or lengthFt^2 for square)
+  // For trenches, it's effectiveLength * effectiveWidth
+  const floorAreaSF =
+    excType === "trench"
+      ? effectiveLength * effectiveWidth
+      : excShape === "square"
+        ? lengthFt * lengthFt
+        : excShape === "rectangle"
+          ? lengthFt * effectiveWidth
+          : surfaceAreaSF; // non-standard uses the approx area
+
+  // Hand Dig % — volumetric cross-section approach
+  // Keyhole shape: semicircle (above pipe center) + rectangle (below center)
+  // then subtract the pipe cylinder volume
+  const bufferR = pipeOD / 2 + settings.pipeClearanceIn; // buffer radius (in)
+  const hBelow = pipeOD / 2 + settings.clearanceUnderPipeIn; // rect below center (in)
+  const keyholeAreaSqIn =
+    (Math.PI * bufferR * bufferR) / 2 + 2 * bufferR * hBelow;
+  const pipeAreaSqIn = Math.PI * (pipeOD / 2) * (pipeOD / 2);
+  const handDigAreaSqIn = keyholeAreaSqIn - pipeAreaSqIn;
+  const handDigVolCF = (handDigAreaSqIn / 144) * effectiveLength;
+  const calculatedHandDigPct =
+    bankVolCF > 0
+      ? Math.min(100, Math.round((handDigVolCF / bankVolCF) * 100))
+      : 0;
+  const activeHandDigPct = handDigOverride
+    ? handDigPctManual
+    : calculatedHandDigPct;
+
   // Surface cut volume
   const surfaceCutCF = surfaceAreaSF * (surface.thicknessIn / 12);
   const surfaceCutCY = cfToCY(surfaceCutCF);
@@ -227,7 +276,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const bankVolCY = cfToCY(bankVolCF);
   const looseVolCY = bankVolCY * swellFactor;
 
-  // ── Pipe zone calculations (per GDS A-03)
+  // Pipe zone calculations (per GDS A-03)
   const pipeODft = pipeOD / 12;
   const beddingDepthFt = Math.max(
     settings.beddingMinIn / 12,
@@ -235,40 +284,28 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   );
   const shadingAboveFt = settings.shadingAbovePipeIn / 12;
   const pipeZoneDepthFt = beddingDepthFt + pipeODft + shadingAboveFt;
-  const pipeZoneVolCF =
-    (excType === "trench" ? effectiveLength : effectiveWidth) *
-    effectiveWidth *
-    pipeZoneDepthFt;
+
+  // FIX #1: Use floorAreaSF instead of effectiveWidth * effectiveWidth for bell holes
+  const pipeZoneVolCF = floorAreaSF * pipeZoneDepthFt;
   const pipeZoneVolCY = cfToCY(pipeZoneVolCF);
 
-  // ── Bedding material (0-sack slurry)
-  const beddingVolCF =
-    (excType === "trench" ? effectiveLength : effectiveWidth) *
-    effectiveWidth *
-    beddingDepthFt;
+  // Bedding material (0-sack slurry)
+  const beddingVolCF = floorAreaSF * beddingDepthFt;
   const beddingVolCY = cfToCY(beddingVolCF);
 
-  // ── Shading material
-  const shadingVolCF =
-    (excType === "trench" ? effectiveLength : effectiveWidth) *
-    effectiveWidth *
-    (pipeODft + shadingAboveFt);
+  // Shading material
+  const shadingVolCF = floorAreaSF * (pipeODft + shadingAboveFt);
   const shadingVolCY = cfToCY(shadingVolCF);
 
-  // ── Final backfill
+  // Final backfill
   const finalBackfillDepthFt = effectiveDepth - pipeZoneDepthFt;
-  const finalBackfillCF = Math.max(
-    0,
-    (excType === "trench" ? effectiveLength : effectiveWidth) *
-      effectiveWidth *
-      finalBackfillDepthFt,
-  );
+  const finalBackfillCF = Math.max(0, floorAreaSF * finalBackfillDepthFt);
   const finalBackfillCY = cfToCY(finalBackfillCF);
 
   // Total backfill needed
   const totalBackfillCY = beddingVolCY + shadingVolCY + finalBackfillCY;
 
-  // ── Crew-based production rates
+  // Crew-based production rates
   const handDiggerCount = settings.crewPipelayers + settings.crewLaborers;
   const totalCrewOnSite =
     settings.crewForeman +
@@ -277,7 +314,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     settings.crewLaborers +
     settings.crewTruckDriver;
 
-  // ── Excavation Time
+  // Excavation Time
   const machineDigRate =
     exc.bucketCY * settings.bucketFillFactor * exc.cyclesPerHr * eff;
   const handDigPct = activeHandDigPct / 100;
@@ -285,7 +322,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const handDigVolCY = bankVolCY * handDigPct;
   const machineDigVolCY = bankVolCY * machineDigPct;
   const handDigHrs =
-    handDigVolCY / ((settings.handDigRateCFPerHr * handDiggerCount) / 27);
+    handDigVolCY / (settings.handDigRateCYPerHr * handDiggerCount);
   const machineDigHrs = machineDigVolCY / machineDigRate;
   const totalExcHrs = handDigHrs + machineDigHrs;
 
@@ -300,7 +337,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
       ? surfaceAreaSF / surface.removalTimeSFPerHr
       : 0;
 
-  // ── Spoils Management
+  // Spoils Management
   let offhaulTruckLoads = 0;
   let offhaulTimeHrs = 0;
   let spoilsReuseCY = 0;
@@ -326,9 +363,9 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
         60;
     }
   } else {
-    // partial
+    // FIX #2: Partial spoils — multiply by swellFactor, not divide
     spoilsReuseCY = finalBackfillCY * 0.5;
-    spoilsOffhaulCY = looseVolCY - spoilsReuseCY / swellFactor;
+    spoilsOffhaulCY = looseVolCY - spoilsReuseCY * swellFactor;
     offhaulTruckLoads = Math.ceil(
       Math.max(0, spoilsOffhaulCY) / truck.capacityCY,
     );
@@ -338,15 +375,22 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
       60;
   }
 
-  // ── Shoring Calculations
+  // Shoring Calculations
   let shoringSF = 0;
   let shoringPanels = 0;
   let shoringInstallHrs = 0;
 
   if (shoringType === "shored") {
-    const wallAreaSF =
-      2 * effectiveLength * effectiveDepth +
-      2 * effectiveWidth * effectiveDepth;
+    // FIX #5: For trenches, only shore the two long walls (ends are open).
+    // For bell holes, shore all 4 walls.
+    let wallAreaSF: number;
+    if (excType === "trench") {
+      wallAreaSF = 2 * effectiveLength * effectiveDepth;
+    } else {
+      wallAreaSF =
+        2 * effectiveLength * effectiveDepth +
+        2 * effectiveWidth * effectiveDepth;
+    }
     shoringSF = wallAreaSF;
     const panelSF =
       settings.shoringPanelWidthFt * settings.shoringPanelHeightFt;
@@ -355,11 +399,12 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
       (shoringPanels * shoring.installTimePerPanelMin) / 60;
   }
 
-  // ── Compaction Time
-  const numLifts = Math.ceil(
-    (effectiveDepth * 12 - settings.shadingAbovePipeIn) /
-      settings.compactionLiftIn,
+  // FIX #3: Compaction lifts — subtract full pipe zone depth, not just shading
+  const compactableDepthIn = Math.max(
+    0,
+    (effectiveDepth - pipeZoneDepthFt) * 12,
   );
+  const numLifts = Math.ceil(compactableDepthIn / settings.compactionLiftIn);
   const compactionAreaSF = surfaceAreaSF || effectiveLength * effectiveWidth;
   const compactionHrsPerLift =
     compactionAreaSF / settings.compactionTimeSFPerHr;
@@ -368,10 +413,10 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const compactionTestHrs =
     (compactionTestCount * settings.compactionTestTimeMin) / 60;
 
-  // ── Zero-sack cure time
+  // Zero-sack cure time
   const beddingCureHrs = settings.zeroSackCureHrs;
 
-  // ── Congestion adjustments
+  // Congestion adjustments
   let congestionTimeFactor = 1.0;
   const congestionNotes: string[] = [];
   if (hasCongestion && congestionItems.length > 0) {
@@ -383,7 +428,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     });
   }
 
-  // ── Import Material Needed
+  // Import Material Needed
   const importBeddingCY = beddingVolCY;
   const importShadingCY = shadingVolCY;
   const importFinalCY =
@@ -391,11 +436,11 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
       ? finalBackfillCY
       : Math.max(0, finalBackfillCY - spoilsReuseCY);
 
-  // ── Backfill Placement Time
+  // Backfill Placement Time
   const backfillPlacementHrs =
     totalBackfillCY / (settings.backfillPlacementCYPerHr * eff);
 
-  // ── Phase Subtotals
+  // Phase Subtotals
   const excPhaseHrs = round1(
     sawCutTimeHrs +
       surfaceRemovalHrs +
@@ -409,7 +454,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     backfillPlacementHrs + totalCompactionHrs + compactionTestHrs,
   );
 
-  // ── Total Timeline
+  // Total Timeline
   const totalFieldHrs = round1(
     excPhaseHrs + shoringPhaseHrs + backfillPhaseHrs,
   );
@@ -417,7 +462,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const crewDays = Math.ceil(totalFieldHrs / 8);
   const totalCalendarDays = crewDays + (beddingVolCY > 0 ? 1 : 0);
 
-  // ── Man-Hours
+  // Man-Hours
   const totalManHrs = round1(totalFieldHrs * totalCrewOnSite);
   const truckDriverHrs =
     settings.crewTruckDriver > 0
@@ -484,7 +529,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
 
     calculatedHandDigPct,
     activeHandDigPct,
-    handDigZoneIn,
+    handDigAreaSqIn: round1(handDigAreaSqIn),
 
     spoilsReuseCY: round2(spoilsReuseCY),
     spoilsOffhaulCY: round2(spoilsOffhaulCY),

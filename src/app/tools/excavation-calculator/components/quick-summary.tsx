@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, ChevronUp } from "lucide-react";
 import type { CalculationResults, ShoringTypeKey } from "../types";
 
 interface QuickSummaryProps {
@@ -90,6 +90,11 @@ export function QuickSummary({ results, shoringType }: QuickSummaryProps) {
             <div className="text-xs text-muted-foreground">Est. Days</div>
           </div>
         </div>
+
+        <p className="text-[11px] text-muted-foreground/50 text-center pt-2 flex items-center justify-center gap-1">
+          <ChevronUp className="w-3 h-3" />
+          Tap for detailed breakdown
+        </p>
       </CardContent>
     </Card>
   );

@@ -159,7 +159,7 @@ export interface CalculationResults {
   // Hand Dig
   calculatedHandDigPct: number;
   activeHandDigPct: number;
-  handDigZoneIn: number;
+  handDigAreaSqIn: number;
 
   // Spoils
   spoilsReuseCY: number;

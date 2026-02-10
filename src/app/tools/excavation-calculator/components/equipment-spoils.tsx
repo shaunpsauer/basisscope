@@ -137,21 +137,27 @@ export function EquipmentSpoils({
           </div>
           <div className="px-3 py-2 bg-muted border rounded-md space-y-1">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Calculated from pipe zone geometry:</span>
+              <span>Calculated from cross-section volume:</span>
               <span className="font-mono">
                 {results.calculatedHandDigPct}%
               </span>
             </div>
-            <div className="flex justify-between text-xs text-muted-foreground/60">
-              <span>
-                {settings.clearanceUnderPipeIn}&quot; under +{" "}
-                {settings.pipeClearanceIn}&quot; clr + {pipeOD}&quot; pipe +{" "}
-                {settings.pipeClearanceIn}&quot; clr = {results.handDigZoneIn}
-                &quot; zone
-              </span>
-              <span>
-                / {round1(results.computedExcDepthFt * 12)}&quot; depth
-              </span>
+            <div className="text-xs text-muted-foreground/60 space-y-0.5">
+              <div className="flex justify-between">
+                <span>
+                  Buffer R: {pipeOD}/2 + {settings.pipeClearanceIn}&quot; ={" "}
+                  {round1(pipeOD / 2 + settings.pipeClearanceIn)}&quot;
+                </span>
+                <span>
+                  Keyhole − pipe = {results.handDigAreaSqIn} sq in
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span>
+                  Below CL: {pipeOD}/2 + {settings.clearanceUnderPipeIn}&quot; ={" "}
+                  {round1(pipeOD / 2 + settings.clearanceUnderPipeIn)}&quot;
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex items-center gap-2">

@@ -1,4 +1,4 @@
-// ─── CONSTANTS & REFERENCE DATA ──────────────────────────────
+// CONSTANTS & REFERENCE DATA
 
 export const SOIL_TYPES = {
   type_a: {
@@ -139,7 +139,7 @@ export const EXC_SHAPES = {
 
 export const DEFAULT_SETTINGS = {
   jobEfficiency: 83,
-  handDigRateCFPerHr: 10,
+  handDigRateCYPerHr: 0.5,
   compactionTimeSFPerHr: 400,
   compactionTestTimeMin: 15,
   beddingDepthMultiplier: 0.333,
@@ -158,7 +158,7 @@ export const DEFAULT_SETTINGS = {
   crewLaborers: 2,
   crewTruckDriver: 0,
   bucketFillFactor: 0.85,
-  shoringPanelWidthFt: 8,
+  shoringPanelWidthFt: 4,
   shoringPanelHeightFt: 8,
   compactionLiftIn: 8,
   backfillPlacementCYPerHr: 15,

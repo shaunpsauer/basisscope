@@ -20,6 +20,8 @@ import type {
   TruckSizeKey,
 } from "./types";
 
+import { Drawer, DrawerTrigger } from "@/components/ui/drawer";
+
 // Components
 import { DimensionsCard } from "./components/dimensions-card";
 import { EquipmentSpoils } from "./components/equipment-spoils";
@@ -158,7 +160,7 @@ export function ExcavationCalculator() {
     setNsSides(nsSides.filter((_, idx) => idx !== i));
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-20">
+    <div className="min-h-screen bg-background text-foreground">
       {/* MAIN FORM */}
       <div className="max-w-3xl mx-auto px-4 py-3 space-y-2.5">
         <div className="flex justify-end">
@@ -249,22 +251,26 @@ export function ExcavationCalculator() {
           results={results}
         />
 
-        <QuickSummary results={results} shoringType={shoringType} />
+        <Drawer>
+          <DrawerTrigger asChild>
+            <div className="cursor-pointer">
+              <QuickSummary results={results} shoringType={shoringType} />
+            </div>
+          </DrawerTrigger>
+          <ResultsDrawer
+            results={results}
+            settings={settings}
+            soilType={soilType}
+            surfaceType={surfaceType}
+            shoringType={shoringType}
+            excavatorSize={excavatorSize}
+            truckSize={truckSize}
+            spoilsAction={spoilsAction}
+            depthMode={depthMode}
+            handDigOverride={handDigOverride}
+          />
+        </Drawer>
       </div>
-
-      {/* RESULTS DRAWER */}
-      <ResultsDrawer
-        results={results}
-        settings={settings}
-        soilType={soilType}
-        surfaceType={surfaceType}
-        shoringType={shoringType}
-        excavatorSize={excavatorSize}
-        truckSize={truckSize}
-        spoilsAction={spoilsAction}
-        depthMode={depthMode}
-        handDigOverride={handDigOverride}
-      />
     </div>
   );
 }
