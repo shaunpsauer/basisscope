@@ -196,7 +196,7 @@ export function EquipmentSpoilsSection({
         </div>
         <div className="flex justify-between text-xs">
           <span className="text-muted-foreground">
-            Hand diggers (pipelayers + laborers):
+            Hand diggers (current crew logic):
           </span>
           <span className="font-mono font-semibold">
             {results.handDiggerCount}

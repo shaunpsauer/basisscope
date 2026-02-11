@@ -10,7 +10,7 @@ import { Drawer, DrawerTrigger } from "@/components/ui/drawer";
 import { Form } from "@/components/ui/form";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { calculateResults, getMinTrenchWidth } from "./calculations";
 import { DEFAULT_SETTINGS } from "./constants";
@@ -21,6 +21,7 @@ import type { ExcType, Settings } from "./types";
 // Sections
 import { ConfigurationSection } from "./sections/configuration";
 import { CongestionSection } from "./sections/congestion";
+import { CrewSetupSection } from "./sections/crew-setup";
 import { DimensionsSection } from "./sections/dimensions";
 import { EquipmentSpoilsSection } from "./sections/equipment-spoils";
 import { QuickSummary } from "./sections/quick-summary";
@@ -38,6 +39,38 @@ export function ExcavationCalculator() {
   // Settings (separate state — has its own reset-to-defaults behavior)
   const [settings, setSettings] = useState<Settings>({ ...DEFAULT_SETTINGS });
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsJustSaved, setSettingsJustSaved] = useState(false);
+  const settingsSavedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
+
+  useEffect(() => {
+    return () => {
+      if (settingsSavedTimeoutRef.current) {
+        clearTimeout(settingsSavedTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleSettingsSave = (nextSettings: Settings) => {
+    setSettings(nextSettings);
+    setSettingsJustSaved(true);
+
+    if (settingsSavedTimeoutRef.current) {
+      clearTimeout(settingsSavedTimeoutRef.current);
+    }
+
+    settingsSavedTimeoutRef.current = setTimeout(() => {
+      setSettingsJustSaved(false);
+    }, 2200);
+  };
+
+  const handleSettingsOpenChange = (open: boolean) => {
+    setSettingsOpen(open);
+    if (open) {
+      setSettingsJustSaved(false);
+    }
+  };
 
   // Watch all values for live calculation
   const values = form.watch();
@@ -55,7 +88,10 @@ export function ExcavationCalculator() {
     <Form {...form}>
       <div className="min-h-screen bg-background text-foreground">
         {/* Sticky header */}
-        <StickyHeader onSettingsOpen={() => setSettingsOpen(true)} />
+          <StickyHeader
+            onSettingsOpen={() => setSettingsOpen(true)}
+            showSettingsSaved={settingsJustSaved}
+          />
 
         {/* Main scrollable area */}
         <main className="max-w-3xl mx-auto px-4 pt-4 pb-28">
@@ -115,6 +151,16 @@ export function ExcavationCalculator() {
               </AccordionContent>
             </AccordionItem>
 
+            {/* Crew Setup */}
+            <AccordionItem value="crew">
+              <AccordionTrigger className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
+                Crew Setup
+              </AccordionTrigger>
+              <AccordionContent className="pt-2 pb-4">
+                <CrewSetupSection settings={settings} setSettings={setSettings} />
+              </AccordionContent>
+            </AccordionItem>
+
             {/* Equipment & Spoils */}
             <AccordionItem value="equipment">
               <AccordionTrigger className="text-sm font-medium uppercase tracking-wide text-muted-foreground">
@@ -140,9 +186,9 @@ export function ExcavationCalculator() {
         {/* Settings sheet */}
         <SettingsSheet
           settings={settings}
-          setSettings={setSettings}
+          onSave={handleSettingsSave}
           open={settingsOpen}
-          onOpenChange={setSettingsOpen}
+          onOpenChange={handleSettingsOpenChange}
         />
       </div>
     </Form>

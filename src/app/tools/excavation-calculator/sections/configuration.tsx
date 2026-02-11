@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { useFormContext } from "react-hook-form";
 import {
   LOCATION_TYPES,
@@ -151,6 +152,29 @@ export function ConfigurationSection() {
                 ))}
               </SelectContent>
             </Select>
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name="existingPipePresent"
+        render={({ field }) => (
+          <FormItem className="flex items-center justify-between rounded-md border p-3">
+            <div className="space-y-0.5">
+              <FormLabel className="text-sm font-medium">
+                No existing pipe present
+              </FormLabel>
+              <p className="text-xs text-muted-foreground">
+                Turn on when installing new pipe in open trench
+              </p>
+            </div>
+            <FormControl>
+              <Switch
+                checked={!field.value}
+                onCheckedChange={(checked) => field.onChange(!checked)}
+              />
+            </FormControl>
           </FormItem>
         )}
       />

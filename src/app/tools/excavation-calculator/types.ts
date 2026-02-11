@@ -65,6 +65,7 @@ export interface CalculatorInput {
   shoringType: ShoringTypeKey;
   excShape: ExcShapeKey;
   pipeOD: number;
+  existingPipePresent: boolean;
 
   // Dimensions
   lengthFt: number;

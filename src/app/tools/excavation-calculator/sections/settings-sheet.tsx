@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +9,7 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
@@ -17,27 +19,46 @@ import type { Settings as SettingsType } from "../types";
 
 interface SettingsSheetProps {
   settings: SettingsType;
-  setSettings: React.Dispatch<React.SetStateAction<SettingsType>>;
+  onSave: (nextSettings: SettingsType) => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function SettingsSheet({
   settings,
-  setSettings,
+  onSave,
   open,
   onOpenChange,
 }: SettingsSheetProps) {
+  const [draft, setDraft] = useState<SettingsType>({ ...settings });
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setDraft({ ...settings });
+    }
+    onOpenChange(nextOpen);
+  };
+
+  const handleCancel = () => {
+    setDraft({ ...settings });
+    onOpenChange(false);
+  };
+
+  const handleSave = () => {
+    onSave({ ...draft });
+    onOpenChange(false);
+  };
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md overflow-y-auto">
-        <SheetHeader>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
+      <SheetContent className="w-full sm:max-w-md overflow-hidden p-0 gap-0">
+        <SheetHeader className="border-b pr-12">
           <SheetTitle>Calculation Parameters</SheetTitle>
           <SheetDescription>
             Adjust defaults used in all calculations
           </SheetDescription>
         </SheetHeader>
-        <div className="mt-6 space-y-5">
+        <div className="flex-1 overflow-y-auto px-4 py-4 space-y-5">
           {/* Job Efficiency */}
           <div>
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -49,17 +70,17 @@ export function SettingsSheet({
                 <Label className="text-sm">Job Efficiency (%)</Label>
                 <div className="flex items-center gap-3 mt-1">
                   <Slider
-                    value={[settings.jobEfficiency]}
+                    value={[draft.jobEfficiency]}
                     min={50}
                     max={100}
                     step={1}
                     onValueChange={([v]) =>
-                      setSettings((s) => ({ ...s, jobEfficiency: v }))
+                      setDraft((s) => ({ ...s, jobEfficiency: v }))
                     }
                     className="flex-1"
                   />
                   <span className="text-sm font-mono w-10 text-right">
-                    {settings.jobEfficiency}%
+                    {draft.jobEfficiency}%
                   </span>
                 </div>
               </div>
@@ -67,12 +88,12 @@ export function SettingsSheet({
                 <Label className="text-sm">Bucket Fill Factor</Label>
                 <div className="flex items-center gap-3 mt-1">
                   <Slider
-                    value={[settings.bucketFillFactor * 100]}
+                    value={[draft.bucketFillFactor * 100]}
                     min={50}
                     max={120}
                     step={5}
                     onValueChange={([v]) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         bucketFillFactor: v / 100,
                       }))
@@ -80,7 +101,7 @@ export function SettingsSheet({
                     className="flex-1"
                   />
                   <span className="text-sm font-mono w-12 text-right">
-                    {Math.round(settings.bucketFillFactor * 100)}%
+                    {Math.round(draft.bucketFillFactor * 100)}%
                   </span>
                 </div>
               </div>
@@ -91,96 +112,14 @@ export function SettingsSheet({
                   inputMode="decimal"
                   step={0.01}
                   min={0.01}
-                  value={settings.handDigRateCYPerHr}
+                  value={draft.handDigRateCYPerHr}
                   onChange={(e) => {
                     const val = parseFloat(e.target.value);
                     if (!isNaN(val))
-                      setSettings((s) => ({ ...s, handDigRateCYPerHr: val }));
+                      setDraft((s) => ({ ...s, handDigRateCYPerHr: val }));
                   }}
                   className="mt-1"
                 />
-              </div>
-            </div>
-          </div>
-
-          {/* Crew Roster */}
-          <div>
-            <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Crew Roster
-            </Label>
-            <Separator className="my-2" />
-            <p className="text-xs text-muted-foreground mb-3">
-              Gas transmission pipeline crew. Pipelayers + Laborers = hand dig
-              capacity.
-            </p>
-            <div className="space-y-2">
-              {[
-                {
-                  label: "Foreman",
-                  desc: "supervision, safety",
-                  key: "crewForeman" as const,
-                  max: 2,
-                },
-                {
-                  label: "Operator",
-                  desc: "runs excavator",
-                  key: "crewOperators" as const,
-                  max: 3,
-                },
-                {
-                  label: "Pipelayer",
-                  desc: "pipe zone, hand dig",
-                  key: "crewPipelayers" as const,
-                  max: 3,
-                },
-                {
-                  label: "Laborers",
-                  desc: "hand dig, compaction",
-                  key: "crewLaborers" as const,
-                  max: 6,
-                },
-                {
-                  label: "Truck Driver",
-                  desc: "0 = shared, 1 = dedicated",
-                  key: "crewTruckDriver" as const,
-                  max: 2,
-                },
-              ].map((role) => (
-                <div
-                  key={role.key}
-                  className="flex items-center justify-between py-1.5 px-3 bg-muted rounded-md"
-                >
-                  <div>
-                    <span className="text-sm font-medium">{role.label}</span>
-                    <span className="text-xs text-muted-foreground ml-2">
-                      {role.desc}
-                    </span>
-                  </div>
-                  <Input
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    max={role.max}
-                    value={settings[role.key]}
-                    onChange={(e) =>
-                      setSettings((s) => ({
-                        ...s,
-                        [role.key]: parseInt(e.target.value) || 0,
-                      }))
-                    }
-                    className="w-16 text-center"
-                  />
-                </div>
-              ))}
-              <div className="flex justify-between items-center pt-1 px-3 text-sm">
-                <span className="text-muted-foreground">Total crew on site:</span>
-                <span className="font-semibold font-mono">
-                  {settings.crewForeman +
-                    settings.crewOperators +
-                    settings.crewPipelayers +
-                    settings.crewLaborers +
-                    settings.crewTruckDriver}
-                </span>
               </div>
             </div>
           </div>
@@ -198,9 +137,9 @@ export function SettingsSheet({
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={settings.beddingMinIn}
+                    value={draft.beddingMinIn}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         beddingMinIn: parseFloat(e.target.value) || 0,
                       }))
@@ -213,9 +152,9 @@ export function SettingsSheet({
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={settings.shadingAbovePipeIn}
+                    value={draft.shadingAbovePipeIn}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         shadingAbovePipeIn: parseFloat(e.target.value) || 0,
                       }))
@@ -230,9 +169,9 @@ export function SettingsSheet({
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={settings.clearanceUnderPipeIn}
+                    value={draft.clearanceUnderPipeIn}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         clearanceUnderPipeIn: parseFloat(e.target.value) || 0,
                       }))
@@ -245,9 +184,9 @@ export function SettingsSheet({
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={settings.pipeClearanceIn}
+                    value={draft.pipeClearanceIn}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         pipeClearanceIn: parseFloat(e.target.value) || 0,
                       }))
@@ -256,7 +195,7 @@ export function SettingsSheet({
                   />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 Clearance under pipe used for depth-to-pipe calculations.
               </p>
               <div>
@@ -264,9 +203,9 @@ export function SettingsSheet({
                 <Input
                   type="number"
                   inputMode="decimal"
-                  value={settings.zeroSackCureHrs}
+                  value={draft.zeroSackCureHrs}
                   onChange={(e) =>
-                    setSettings((s) => ({
+                    setDraft((s) => ({
                       ...s,
                       zeroSackCureHrs: parseFloat(e.target.value) || 0,
                     }))
@@ -290,9 +229,9 @@ export function SettingsSheet({
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={settings.compactionTimeSFPerHr}
+                    value={draft.compactionTimeSFPerHr}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         compactionTimeSFPerHr: parseFloat(e.target.value) || 1,
                       }))
@@ -305,9 +244,9 @@ export function SettingsSheet({
                   <Input
                     type="number"
                     inputMode="decimal"
-                    value={settings.compactionLiftIn}
+                    value={draft.compactionLiftIn}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         compactionLiftIn: parseFloat(e.target.value) || 1,
                       }))
@@ -321,9 +260,9 @@ export function SettingsSheet({
                 <Input
                   type="number"
                   inputMode="decimal"
-                  value={settings.compactionTestTimeMin}
+                  value={draft.compactionTestTimeMin}
                   onChange={(e) =>
-                    setSettings((s) => ({
+                    setDraft((s) => ({
                       ...s,
                       compactionTestTimeMin: parseFloat(e.target.value) || 0,
                     }))
@@ -336,9 +275,9 @@ export function SettingsSheet({
                 <Input
                   type="number"
                   inputMode="decimal"
-                  value={settings.backfillPlacementCYPerHr}
+                  value={draft.backfillPlacementCYPerHr}
                   onChange={(e) =>
-                    setSettings((s) => ({
+                    setDraft((s) => ({
                       ...s,
                       backfillPlacementCYPerHr: parseFloat(e.target.value) || 1,
                     }))
@@ -361,9 +300,9 @@ export function SettingsSheet({
                 <Input
                   type="number"
                   inputMode="decimal"
-                  value={settings.truckRoundTripMin}
+                  value={draft.truckRoundTripMin}
                   onChange={(e) =>
-                    setSettings((s) => ({
+                    setDraft((s) => ({
                       ...s,
                       truckRoundTripMin: parseFloat(e.target.value) || 0,
                     }))
@@ -378,9 +317,9 @@ export function SettingsSheet({
                     type="number"
                     inputMode="decimal"
                     placeholder="Width"
-                    value={settings.shoringPanelWidthFt}
+                    value={draft.shoringPanelWidthFt}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         shoringPanelWidthFt: parseFloat(e.target.value) || 1,
                       }))
@@ -390,9 +329,9 @@ export function SettingsSheet({
                     type="number"
                     inputMode="decimal"
                     placeholder="Height"
-                    value={settings.shoringPanelHeightFt}
+                    value={draft.shoringPanelHeightFt}
                     onChange={(e) =>
-                      setSettings((s) => ({
+                      setDraft((s) => ({
                         ...s,
                         shoringPanelHeightFt: parseFloat(e.target.value) || 1,
                       }))
@@ -403,14 +342,24 @@ export function SettingsSheet({
             </div>
           </div>
 
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => setSettings({ ...DEFAULT_SETTINGS })}
-          >
-            Reset to Defaults
-          </Button>
         </div>
+        <SheetFooter className="border-t">
+          <div className="w-full space-y-2">
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setDraft({ ...DEFAULT_SETTINGS })}
+            >
+              Reset to Defaults
+            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="ghost" onClick={handleCancel}>
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>Save Settings</Button>
+            </div>
+          </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   );

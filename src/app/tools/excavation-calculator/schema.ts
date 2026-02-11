@@ -37,6 +37,7 @@ export const excavationSchema = z.object({
   shoringType: z.enum(["none", "shored", "sloped", "benched"]),
   excShape: z.enum(["square", "rectangle", "nonstandard"]),
   pipeOD: z.number().min(1),
+  existingPipePresent: z.boolean(),
 
   // Dimensions
   lengthFt: z.number().min(0),
@@ -80,6 +81,7 @@ export const formDefaults: ExcavationFormValues = {
   shoringType: "none",
   excShape: "rectangle",
   pipeOD: 6,
+  existingPipePresent: true,
   lengthFt: 20,
   widthFt: 0,
   depthFt: 5,
