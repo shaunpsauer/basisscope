@@ -36,6 +36,14 @@ export function round1(n: number): number {
   return Math.round(n * 10) / 10;
 }
 
+function safeDivide(numerator: number, denominator: number): number {
+  if (denominator <= 0 || !Number.isFinite(denominator)) {
+    return numerator === 0 ? 0 : 0;
+  }
+  const result = numerator / denominator;
+  return Number.isFinite(result) ? result : 0;
+}
+
 function calcVolumeRect(
   lengthFt: number,
   widthFt: number,
@@ -108,6 +116,7 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     shoringType,
     excShape,
     pipeOD,
+    existingPipePresent,
     lengthFt,
     depthFt,
     depthMode,
@@ -282,6 +291,15 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
     }
   }
 
+  const pipeODft = pipeOD / 12;
+  const pipeRadiusFt = pipeODft / 2;
+  const pipeDisplacementCF = existingPipePresent
+    ? Math.PI * pipeRadiusFt * pipeRadiusFt * effectiveLength
+    : 0;
+
+  // Net removed excavation volume (subtract existing pipe displacement when enabled)
+  bankVolCF = Math.max(0, bankVolCF - pipeDisplacementCF);
+
   // Hand Dig % — volumetric cross-section approach
   // Keyhole shape: semicircle (above pipe center) + rectangle (below center)
   // then subtract the pipe cylinder volume
@@ -308,7 +326,6 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const looseVolCY = bankVolCY * swellFactor;
 
   // Pipe zone calculations (per GDS A-03)
-  const pipeODft = pipeOD / 12;
   const beddingDepthFt = Math.max(
     settings.beddingMinIn / 12,
     (pipeOD * settings.beddingDepthMultiplier) / 12,
@@ -317,7 +334,10 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const pipeZoneDepthFt = beddingDepthFt + pipeODft + shadingAboveFt;
 
   // FIX #1: Use floorAreaSF instead of effectiveWidth * effectiveWidth for bell holes
-  const pipeZoneVolCF = floorAreaSF * pipeZoneDepthFt;
+  const pipeZoneVolCF = Math.max(
+    0,
+    floorAreaSF * pipeZoneDepthFt - pipeDisplacementCF,
+  );
   const pipeZoneVolCY = cfToCY(pipeZoneVolCF);
 
   // Bedding material (0-sack slurry)
@@ -325,7 +345,10 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const beddingVolCY = cfToCY(beddingVolCF);
 
   // Shading material
-  const shadingVolCF = floorAreaSF * (pipeODft + shadingAboveFt);
+  const shadingVolCF = Math.max(
+    0,
+    floorAreaSF * (pipeODft + shadingAboveFt) - pipeDisplacementCF,
+  );
   const shadingVolCY = cfToCY(shadingVolCF);
 
   // Final backfill
@@ -352,9 +375,11 @@ export function calculateResults(input: CalculatorInput): CalculationResults {
   const machineDigPct = 1 - handDigPct;
   const handDigVolCY = bankVolCY * handDigPct;
   const machineDigVolCY = bankVolCY * machineDigPct;
-  const handDigHrs =
-    handDigVolCY / (settings.handDigRateCYPerHr * handDiggerCount);
-  const machineDigHrs = machineDigVolCY / machineDigRate;
+  const handDigHrs = safeDivide(
+    handDigVolCY,
+    settings.handDigRateCYPerHr * handDiggerCount,
+  );
+  const machineDigHrs = safeDivide(machineDigVolCY, machineDigRate);
   const totalExcHrs = handDigHrs + machineDigHrs;
 
   // Surface removal time

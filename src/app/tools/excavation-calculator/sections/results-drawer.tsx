@@ -63,12 +63,14 @@ function Row({
 
 export function ResultsDrawer({ results, settings }: ResultsDrawerProps) {
   const { watch } = useFormContext<ExcavationFormValues>();
+  const excavationCrewTotal = settings.crewOperators + settings.crewLaborers;
 
   const soilType = watch("soilType");
   const surfaceType = watch("surfaceType");
   const shoringType = watch("shoringType");
   const excavatorSize = watch("excavatorSize");
   const truckSize = watch("truckSize");
+  const existingPipePresent = watch("existingPipePresent");
   const spoilsAction = watch("spoilsAction");
   const handDigOverride = watch("handDigOverride");
   const projectDesc = watch("projectDesc");
@@ -320,6 +322,15 @@ export function ResultsDrawer({ results, settings }: ResultsDrawerProps) {
                     </TableCell>
                   </TableRow>
                 )}
+                <TableRow>
+                  <TableCell className="text-muted-foreground">
+                    Pipe Displacement
+                  </TableCell>
+                  <TableCell className="text-right font-mono tabular-nums">
+                    {existingPipePresent ? "Applied" : "Not Applied"}
+                  </TableCell>
+                  <TableCell className="text-right text-muted-foreground">—</TableCell>
+                </TableRow>
               </TableBody>
             </Table>
           </TabsContent>
@@ -435,23 +446,17 @@ export function ResultsDrawer({ results, settings }: ResultsDrawerProps) {
               <p className="text-xs uppercase tracking-wide text-muted-foreground mb-2 font-medium">
                 Crew &amp; Man-Hours
               </p>
-              {settings.crewForeman > 0 && (
-                <Row label="Foreman" value={settings.crewForeman} />
-              )}
-              {settings.crewOperators > 0 && (
-                <Row label="Operator" value={settings.crewOperators} />
-              )}
-              {settings.crewPipelayers > 0 && (
-                <Row label="Pipelayer" value={settings.crewPipelayers} />
-              )}
-              {settings.crewLaborers > 0 && (
-                <Row label="Laborers" value={settings.crewLaborers} />
-              )}
-              {settings.crewTruckDriver > 0 && (
-                <Row label="Truck Driver" value={settings.crewTruckDriver} />
-              )}
+              <Row label="Operator" value={settings.crewOperators} />
+              <Row label="Laborers" value={settings.crewLaborers} />
               <Separator className="my-2" />
-              <Row label="Total crew" value={results.totalCrewOnSite} unit="people" />
+              <Row label="Excavation crew" value={excavationCrewTotal} unit="people" />
+              {results.totalCrewOnSite !== excavationCrewTotal && (
+                <Row
+                  label="Computed total crew"
+                  value={results.totalCrewOnSite}
+                  unit="people"
+                />
+              )}
               <Row label="Hand diggers" value={results.handDiggerCount} unit="people" />
               <Row
                 label="Total Man-Hours"

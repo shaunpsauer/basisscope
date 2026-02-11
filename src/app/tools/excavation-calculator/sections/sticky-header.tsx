@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -14,9 +15,13 @@ import type { ExcavationFormValues } from "../schema";
 
 interface StickyHeaderProps {
   onSettingsOpen: () => void;
+  showSettingsSaved: boolean;
 }
 
-export function StickyHeader({ onSettingsOpen }: StickyHeaderProps) {
+export function StickyHeader({
+  onSettingsOpen,
+  showSettingsSaved,
+}: StickyHeaderProps) {
   const { register } = useFormContext<ExcavationFormValues>();
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -29,14 +34,21 @@ export function StickyHeader({ onSettingsOpen }: StickyHeaderProps) {
             placeholder="Untitled Excavation"
             className="flex-1 border-transparent bg-transparent shadow-none text-base font-medium placeholder:text-muted-foreground/50 focus-visible:border-input focus-visible:bg-background"
           />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0"
-            onClick={onSettingsOpen}
-          >
-            <Settings2 className="h-[18px] w-[18px]" />
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {showSettingsSaved ? (
+              <Badge variant="secondary" className="text-[10px] uppercase">
+                Saved
+              </Badge>
+            ) : null}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="shrink-0"
+              onClick={onSettingsOpen}
+            >
+              <Settings2 className="h-[18px] w-[18px]" />
+            </Button>
+          </div>
         </div>
 
         <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
